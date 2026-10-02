@@ -4,16 +4,20 @@
 
 #ifndef DATAPOINT_HPP
 #define DATAPOINT_HPP
+
+#include "raylib.h"
  
  class DataPoint {
   public:
     // constructors
     DataPoint(const double x, const double y, const bool flag);
+    DataPoint(Vector2 position , const bool flag);
 
     // getters
     double GetXCoordenate() const; 
     double GetYCoordenate() const;
     bool GetClassFlag() const;
+    Vector2 GetPosition() const;
     
     // setters 
     void SetX(const double x);

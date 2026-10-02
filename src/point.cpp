@@ -2,6 +2,7 @@
 
 // constructor
 DataPoint::DataPoint(const double x, const double y, const bool flag) :x_coordenate_{x}, y_coordenate_{y}, class_flag_{flag} {}
+DataPoint::DataPoint(Vector2 position, const bool flag) :x_coordenate_{static_cast<double>(position.x)}, y_coordenate_{static_cast<double>(position.y)}, class_flag_{flag} {}
 
 // getters
 double DataPoint::GetXCoordenate() const {
@@ -14,6 +15,10 @@ double DataPoint::GetYCoordenate() const {
 
 bool DataPoint::GetClassFlag() const {
   return class_flag_;
+}
+
+Vector2 DataPoint::GetPosition() const {
+  return Vector2{static_cast<int>(x_coordenate_), static_cast<int>(y_coordenate_)};
 }
 
 // setters 

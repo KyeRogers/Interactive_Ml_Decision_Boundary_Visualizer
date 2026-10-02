@@ -19,7 +19,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 # ---- EXECUTABLE CONFIGURATION ----
-add_executable(ml_boundary_visualizer src/main.cpp src/point.cpp)
+add_executable(ml_boundary_visualizer src/simulator.cpp src/main.cpp src/point.cpp)
 
 target_include_directories(ml_boundary_visualizer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

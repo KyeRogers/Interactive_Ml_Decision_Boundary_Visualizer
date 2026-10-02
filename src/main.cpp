@@ -1,14 +1,10 @@
 #include "raylib.h"
+#include "simulator.hpp"
 
-int main() {
-  InitWindow(800, 800, "ML Decision Boundary Visualizer");
-  SetTargetFPS(60);
+int main() {  
+  Simulator sim;
+  sim.Initialize();
 
-  while (!WindowShouldClose()) {
-    BeginDrawing();
-    ClearBackground(RAYWHITE);
-    EndDrawing();
-  }
-  CloseWindow();
+ sim.Run();
   return 0;
 }

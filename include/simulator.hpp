@@ -10,19 +10,19 @@
 
 class Simulator {
   public:
-    // constructors
-    Simulator();
+    Simulator() = default;
 
-    // getters
-    std::vector<DataPoint> GetDataPoints() const;
+    const std::vector<DataPoint>& GetDataPoints() const;
+    void AddDataPoint(const DataPoint& new_data_point);
 
-    // add data point
-    void AddDataPoint(DataPoint& new_data_point);
+    // initialize screen
+    void Initialize() const;
 
+    // run sim
+    void Run();
 
   private:
-    std::vector<DataPoint*> data_points_;
-
+    std::vector<DataPoint> data_points_;
 };
 
 #endif
