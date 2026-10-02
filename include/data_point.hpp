@@ -2,6 +2,8 @@
  * Create the data structure to store points
  */
 
+#ifndef DATAPOINT_HPP
+#define DATAPOINT_HPP
  
  class DataPoint {
   public:
@@ -27,3 +29,5 @@
     double y_coordenate_;
     bool class_flag_; // False(class 0) = red ; True(class 1) = blue
  };
+
+ #endif
