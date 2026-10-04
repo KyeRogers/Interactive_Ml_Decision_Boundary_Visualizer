@@ -6,6 +6,7 @@
 #define SIMULATOR_HPP
 
 #include <vector>
+#include <string>
 
 #include "data_point.hpp"
 
@@ -19,6 +20,8 @@ class Simulator {
   // initialize screen
   void Initialize() const;
 
+  void LoadFromFile(const std::string& filename);
+
   // run sim
   void Run();
 
@@ -30,12 +33,12 @@ class Simulator {
     float weight2 = 0.0f;
     float bias = 0.0f;
     float learn_rate = 0.05f;  
-    int KEpochs = 1;
+    int KEpochs = 50;
   } model;
 
   void UpdateModelParameters();
-
-  void Draw() const;
+  float Predict(const float x, const float y) const;
+  void Draw(const int step) const;
 
 };
 

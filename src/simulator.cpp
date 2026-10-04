@@ -1,5 +1,7 @@
 #include "simulator.hpp"
 
+#include <cmath>
+
 #include "raylib.h"
 
 const std::vector<DataPoint>& Simulator::GetDataPoints() const {
@@ -31,11 +33,12 @@ void Simulator::Run() {
       AddDataPoint(new_point);
     } else if (IsKeyPressed(KEY_SPACE)) {
       data_points_.clear();
+      model = LinearModel();
     }
 
     UpdateModelParameters();
 
-    Draw();
+    Draw(10);
   }
   CloseWindow();
 }
@@ -46,8 +49,8 @@ void Simulator::UpdateModelParameters() {
     for (const DataPoint& point : data_points_) {
       // For each point $(x_1, x_2, y)$, calculate prediction
       // ŷ = learn_rate(w_1 x_1 + w_2 x_2 + b)
-      float prediction = (model.weight1 * point.GetXCoordenate() +
-                          model.weight2 * point.GetYCoordenate() + model.bias);
+      float prediction =
+          Predict(point.GetXCoordenate(), point.GetYCoordenate());
 
       // Calculate error (ŷ - y)
       float error = prediction - point.GetClassFlag();
@@ -60,17 +63,36 @@ void Simulator::UpdateModelParameters() {
   }
 }
 
-void Simulator::Draw() const {
+void Simulator::Draw(const int step) const {
   BeginDrawing();
   ClearBackground(RAYWHITE);
+
+  // draw background
+  for (int x{0}; x < 800; x += step) {
+    for (int y{0}; y < 800; y += step) {
+      DataPoint temp(x + step/2, y + step/2, 0);
+      temp.ScreenToNorm();
+      float prediction = Predict(temp.GetXCoordenate(), temp.GetYCoordenate());
+
+      // interpolate colour using prediction as factor
+      Color colour = ColorLerp(RED, BLUE, prediction);
+      DrawRectangle(x, y, step, step, colour);
+    }
+  }
+  // draw points
   for (const DataPoint point : data_points_) {
     DataPoint screen_point = point;
     screen_point.NormToScreen();
     if (point.GetClassFlag()) {
-      DrawCircleV(screen_point.GetPosition(), 8.0f, BLUE);
+      DrawCircleV(screen_point.GetPosition(), 6.0f, BLUE);
     } else {
-      DrawCircleV(screen_point.GetPosition(), 8.0f, RED);
+      DrawCircleV(screen_point.GetPosition(), 6.0f, RED);
     }
   }
   EndDrawing();
+}
+
+float Simulator::Predict(const float x, const float y) const {
+  float prediction = model.weight1 * x + model.weight2 * y + model.bias;
+  return 1.0f / (1.0f + std::exp(-prediction));  // sigmoid function
 }
