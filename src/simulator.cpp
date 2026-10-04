@@ -3,9 +3,21 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
+/** Creates a simulator using the default degree-one polynomial model. */
+Simulator::Simulator() : Simulator(std::make_unique<PolynomialModel>()) {}
+
+/** Creates a simulator with the supplied model implementation. */
+Simulator::Simulator(std::unique_ptr<MlModel> model) : model_(std::move(model)) {
+  if (!model_) {
+    throw std::invalid_argument("Simulator requires a model.");
+  }
+  model_->SetLearningRate(learn_rate_);
+}
 
 /** Provides read-only access to the simulator's data points. */
 const std::vector<DataPoint>& Simulator::GetDataPoints() const {
@@ -15,6 +27,7 @@ const std::vector<DataPoint>& Simulator::GetDataPoints() const {
 /** Adds a point to the training dataset. */
 void Simulator::AddDataPoint(const DataPoint& new_data_point) {
   data_points_.push_back(new_data_point);
+  model_needs_training_ = true;
 }
 
 /** Initializes the renderer using the configured screen size. */
@@ -47,22 +60,38 @@ void Simulator::Run() {
       }
     }
 
-    model.learn_rate =
-        std::clamp(model.learn_rate + events.learn_rate_delta, 0.001f, 1.0f);
-    model.KEpochs = std::clamp(model.KEpochs + events.epochs_delta, 1, 1000);
+    const float previous_learn_rate = learn_rate_;
+    learn_rate_ =
+        std::clamp(learn_rate_ + events.learn_rate_delta, 0.001f, 1.0f);
+    model_needs_training_ =
+        model_needs_training_ || learn_rate_ != previous_learn_rate;
+    model_->SetLearningRate(learn_rate_);
+    const int previous_epochs = KEpochs;
+    KEpochs = std::clamp(KEpochs + events.epochs_delta, 1, 1000);
+    model_needs_training_ =
+        model_needs_training_ || KEpochs != previous_epochs;
+    if (events.polynomial_degree != 0) {
+      if (events.polynomial_degree != model_->GetDegree()) {
+        model_->SetDegree(events.polynomial_degree);
+        model_needs_training_ = true;
+      }
+    }
     block_size_ = std::clamp(block_size_ + events.block_size_delta, 2, 100);
     screen_size_ = std::clamp(screen_size_ + events.screen_size_delta, 800, 1600);
     dot_radius_ = std::clamp(dot_radius_ + events.dot_radius_delta, 2, 24);
 
-    if (!events.help_open) {
+    if (!events.help_open && model_needs_training_) {
       UpdateModelParameters();
     }
 
-    const std::vector<float> probabilities = BuildProbabilityGrid();
+    std::vector<float> probabilities;
+    if (!events.help_open) {
+      probabilities = BuildProbabilityGrid();
+    }
     renderer_.Render(data_points_, probabilities,
                      (screen_size_ + block_size_ - 1) / block_size_,
-                     block_size_, screen_size_, model.weight1, model.weight2,
-                     dot_radius_, model.bias, model.learn_rate, model.KEpochs,
+                     block_size_, screen_size_, model_->GetParameters(),
+                     model_->GetDegree(), dot_radius_, learn_rate_, KEpochs,
                      file_status_);
   }
   renderer_.Close();
@@ -70,15 +99,16 @@ void Simulator::Run() {
 
 /** Applies the configured number of gradient-descent passes to the dataset. */
 void Simulator::UpdateModelParameters() {
-  for (int i{0}; i < model.KEpochs; i++) {
+  if (data_points_.empty()) {
+    model_needs_training_ = false;
+    return;
+  }
+  for (int i{0}; i < KEpochs; i++) {
     for (const DataPoint& point : data_points_) {
-      const float prediction =
-          Predict(point.GetXCoordenate(), point.GetYCoordenate());
-      const float error = prediction - point.GetClassFlag();
-      model.weight1 -= model.learn_rate * error * point.GetXCoordenate();
-      model.weight2 -= model.learn_rate * error * point.GetYCoordenate();
-      model.bias -= model.learn_rate * error;
+      model_->Train(point.GetXCoordenate(), point.GetYCoordenate(),
+                    point.GetClassFlag() ? 1.0f : 0.0f);
     }
+    model_needs_training_ = false;
   }
 }
 
@@ -108,8 +138,7 @@ std::vector<float> Simulator::BuildProbabilityGrid() const {
 
 /** Returns the model's sigmoid probability for a normalized coordinate. */
 float Simulator::Predict(const float x, const float y) const {
-  const float prediction = model.weight1 * x + model.weight2 * y + model.bias;
-  return 1.0f / (1.0f + std::exp(-prediction));
+  return model_->Predict(x, y);
 }
 
 /**
@@ -140,11 +169,19 @@ void Simulator::LoadFromFile(const std::string& filename) {
     loaded_points.push_back(point);
   }
   data_points_.swap(loaded_points);
-  model = LinearModel();
+  learn_rate_ = 0.05f;
+  KEpochs = 50;
+  model_->SetLearningRate(learn_rate_);
+  model_->Reset();
+  model_needs_training_ = true;
 }
 
 /** Removes all points and resets the model parameters. */
 void Simulator::Clear() {
   data_points_.clear();
-  model = LinearModel();
+  learn_rate_ = 0.05f;
+  KEpochs = 50;
+  model_->SetLearningRate(learn_rate_);
+  model_->Reset();
+  model_needs_training_ = false;
 }

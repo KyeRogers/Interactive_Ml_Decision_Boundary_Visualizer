@@ -17,6 +17,15 @@ constexpr int kPointColorCount =
     static_cast<int>(sizeof(kPointColors) / sizeof(kPointColors[0]));
 constexpr Rectangle kFileInputBounds{75.0f, 232.0f, 475.0f, 36.0f};
 constexpr Rectangle kLoadButtonBounds{560.0f, 232.0f, 150.0f, 36.0f};
+constexpr int kMaxPolynomialDegree = 10;
+constexpr float kDegreeButtonStartX = 455.0f;
+constexpr float kDegreeButtonY = 151.0f;
+constexpr float kDegreeButtonStep = 30.0f;
+constexpr float kDegreeButtonWidth = 26.0f;
+constexpr Rectangle DegreeButtonBounds(int degree) {
+  return {kDegreeButtonStartX + (degree - 1) * kDegreeButtonStep,
+          kDegreeButtonY, kDegreeButtonWidth, 30.0f};
+}
 constexpr Rectangle kLearnRateMinusBounds{350.0f, 476.0f, 38.0f, 32.0f};
 constexpr Rectangle kLearnRatePlusBounds{394.0f, 476.0f, 38.0f, 32.0f};
 constexpr Rectangle kEpochsMinusBounds{620.0f, 358.0f, 38.0f, 32.0f};
@@ -119,41 +128,62 @@ Renderer::InputEvents Renderer::PollInput() {
     filename_entry_.clear();
   }
 
+  if (!file_input_active_) {
+    for (int degree = 1; degree <= 9; ++degree) {
+      if (IsKeyPressed(KEY_ONE + degree - 1)) {
+        events.polynomial_degree = degree;
+      }
+    }
+    if (IsKeyPressed(KEY_ZERO)) {
+      events.polynomial_degree = 10;
+    }
+  }
+
   if (show_help_) {
-    if (IsClicked(kFileInputBounds)) {
-      file_input_active_ = true;
-    } else if (IsClicked(kLoadButtonBounds)) {
-      events.load_file = true;
-      events.load_filename = filename_entry_;
-      file_input_active_ = filename_entry_.empty();
-    } else if (IsClicked(kLearnRateMinusBounds)) {
-      events.learn_rate_delta = -0.01f;
-    } else if (IsClicked(kLearnRatePlusBounds)) {
-      events.learn_rate_delta = 0.01f;
-    } else if (IsClicked(kEpochsMinusBounds)) {
-      events.epochs_delta = -10;
-    } else if (IsClicked(kEpochsPlusBounds)) {
-      events.epochs_delta = 10;
-    } else if (IsClicked(kBlockSizeMinusBounds)) {
-      events.block_size_delta = -2;
-    } else if (IsClicked(kBlockSizePlusBounds)) {
-      events.block_size_delta = 2;
-    } else if (IsClicked(kScreenSizeMinusBounds)) {
-      events.screen_size_delta = -100;
-    } else if (IsClicked(kScreenSizePlusBounds)) {
-      events.screen_size_delta = 100;
-    } else if (IsClicked(kDotRadiusMinusBounds)) {
-      events.dot_radius_delta = -1;
-    } else if (IsClicked(kDotRadiusPlusBounds)) {
-      events.dot_radius_delta = 1;
-    } else if (IsClicked(kClass0ColorMinusBounds)) {
-      class_0_color_index_ = CycleColor(class_0_color_index_, -1);
-    } else if (IsClicked(kClass0ColorPlusBounds)) {
-      class_0_color_index_ = CycleColor(class_0_color_index_, 1);
-    } else if (IsClicked(kClass1ColorMinusBounds)) {
-      class_1_color_index_ = CycleColor(class_1_color_index_, -1);
-    } else if (IsClicked(kClass1ColorPlusBounds)) {
-      class_1_color_index_ = CycleColor(class_1_color_index_, 1);
+    bool degree_selected = false;
+    for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
+      if (IsClicked(DegreeButtonBounds(degree))) {
+        events.polynomial_degree = degree;
+        degree_selected = true;
+        break;
+      }
+    }
+    if (!degree_selected) {
+      if (IsClicked(kFileInputBounds)) {
+        file_input_active_ = true;
+      } else if (IsClicked(kLoadButtonBounds)) {
+        events.load_file = true;
+        events.load_filename = filename_entry_;
+        file_input_active_ = filename_entry_.empty();
+      } else if (IsClicked(kLearnRateMinusBounds)) {
+        events.learn_rate_delta = -0.01f;
+      } else if (IsClicked(kLearnRatePlusBounds)) {
+        events.learn_rate_delta = 0.01f;
+      } else if (IsClicked(kEpochsMinusBounds)) {
+        events.epochs_delta = -10;
+      } else if (IsClicked(kEpochsPlusBounds)) {
+        events.epochs_delta = 10;
+      } else if (IsClicked(kBlockSizeMinusBounds)) {
+        events.block_size_delta = -2;
+      } else if (IsClicked(kBlockSizePlusBounds)) {
+        events.block_size_delta = 2;
+      } else if (IsClicked(kScreenSizeMinusBounds)) {
+        events.screen_size_delta = -100;
+      } else if (IsClicked(kScreenSizePlusBounds)) {
+        events.screen_size_delta = 100;
+      } else if (IsClicked(kDotRadiusMinusBounds)) {
+        events.dot_radius_delta = -1;
+      } else if (IsClicked(kDotRadiusPlusBounds)) {
+        events.dot_radius_delta = 1;
+      } else if (IsClicked(kClass0ColorMinusBounds)) {
+        class_0_color_index_ = CycleColor(class_0_color_index_, -1);
+      } else if (IsClicked(kClass0ColorPlusBounds)) {
+        class_0_color_index_ = CycleColor(class_0_color_index_, 1);
+      } else if (IsClicked(kClass1ColorMinusBounds)) {
+        class_1_color_index_ = CycleColor(class_1_color_index_, -1);
+      } else if (IsClicked(kClass1ColorPlusBounds)) {
+        class_1_color_index_ = CycleColor(class_1_color_index_, 1);
+      }
     }
   } else {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -186,8 +216,9 @@ Renderer::InputEvents Renderer::PollInput() {
 void Renderer::Render(const std::vector<DataPoint>& points,
                       const std::vector<float>& probabilities,
                       int grid_columns, int block_size, int screen_size,
-                      float weight1, float weight2, int dot_radius, float bias,
-                      float learn_rate, int epochs,
+                      const std::vector<MlModel::Parameter>& model_parameters,
+                      int polynomial_degree, int dot_radius, float learn_rate,
+                      int epochs,
                       const std::string& file_status) {
   if (screen_size != current_screen_size_) {
     current_screen_size_ = screen_size;
@@ -197,8 +228,8 @@ void Renderer::Render(const std::vector<DataPoint>& points,
   BeginDrawing();
   ClearBackground(RAYWHITE);
   if (show_help_) {
-    DrawHelp(weight1, weight2, bias, learn_rate, epochs, block_size,
-             screen_size, dot_radius, file_status);
+    DrawHelp(model_parameters, polynomial_degree, learn_rate, epochs,
+             block_size, screen_size, dot_radius, file_status);
     EndDrawing();
     return;
   }
@@ -243,10 +274,10 @@ void Renderer::Render(const std::vector<DataPoint>& points,
 void Renderer::Close() { CloseWindow(); }
 
 /** Draws the help panel, file input, model values, and interactive controls. */
-void Renderer::DrawHelp(float weight1, float weight2, float bias,
-                        float learn_rate, int epochs, int block_size,
-                        int screen_size, int dot_radius,
-                        const std::string& file_status) const {
+void Renderer::DrawHelp(
+    const std::vector<MlModel::Parameter>& model_parameters,
+    int polynomial_degree, float learn_rate, int epochs, int block_size,
+    int screen_size, int dot_radius, const std::string& file_status) const {
   DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.6f));
   DrawRectangle(40, 35, 720, 730, RAYWHITE);
   DrawRectangleLines(40, 35, 720, 730, DARKGRAY);
@@ -255,6 +286,17 @@ void Renderer::DrawHelp(float weight1, float weight2, float bias,
            75, 95, 18, DARKGRAY);
   DrawText("F: open file input   |   Type x y class (0 or 1), one point per line",
            75, 125, 18, DARKGRAY);
+  DrawText("Polynomial degree (click or press 1-9):", 75, 157, 18, BLACK);
+  for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
+    const Rectangle bounds = DegreeButtonBounds(degree);
+    const bool selected = degree == polynomial_degree;
+    const bool hovered = CheckCollisionPointRec(GetMousePosition(), bounds);
+    DrawRectangleRec(bounds, selected ? GREEN : (hovered ? SKYBLUE : LIGHTGRAY));
+    DrawRectangleLinesEx(bounds, 1.0f, DARKGRAY);
+    DrawText(TextFormat("%d", degree % 10),
+             static_cast<int>(bounds.x + (bounds.width - 12.0f) / 2.0f),
+             static_cast<int>(bounds.y + 5.0f), 20, DARKGRAY);
+  }
   DrawText("File path:", 75, 205, 18, BLACK);
   DrawRectangleRec(kFileInputBounds, WHITE);
   DrawRectangleLinesEx(kFileInputBounds, 1.0f,
@@ -275,9 +317,23 @@ void Renderer::DrawHelp(float weight1, float weight2, float bias,
            file_status.find("Error:") == 0 ? RED : DARKGRAY);
   DrawLine(70, 310, 730, 310, LIGHTGRAY);
   DrawText("Model parameters", 75, 325, 20, BLACK);
-  DrawText(TextFormat("Weight 1: %.4f", weight1), 75, 365, 18, DARKBLUE);
-  DrawText(TextFormat("Weight 2: %.4f", weight2), 75, 395, 18, DARKBLUE);
-  DrawText(TextFormat("Bias: %.4f", bias), 75, 425, 18, DARKBLUE);
+  if (model_parameters.size() <= 3) {
+    for (std::size_t i = 0; i < model_parameters.size(); ++i) {
+      DrawText(TextFormat("%s: %.4f", model_parameters[i].name.c_str(),
+                          model_parameters[i].value),
+               75, 365 + static_cast<int>(i) * 30, 18, DARKBLUE);
+    }
+  } else {
+    for (std::size_t i = 0; i < 2; ++i) {
+      DrawText(TextFormat("%s: %.4f", model_parameters[i].name.c_str(),
+                          model_parameters[i].value),
+               75, 365 + static_cast<int>(i) * 30, 18, DARKBLUE);
+    }
+    DrawText("...", 75, 425, 18, DARKBLUE);
+    const MlModel::Parameter& bias = model_parameters.back();
+    DrawText(TextFormat("%s: %.4f", bias.name.c_str(), bias.value), 75, 455, 18,
+             DARKBLUE);
+  }
   DrawText(TextFormat("Learn rate: %.4f", learn_rate), 75, 482, 18, DARKBLUE);
   DrawButton(kLearnRateMinusBounds, "-");
   DrawButton(kLearnRatePlusBounds, "+");

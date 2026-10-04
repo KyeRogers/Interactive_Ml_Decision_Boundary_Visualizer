@@ -22,6 +22,7 @@ FetchContent_MakeAvailable(raylib)
 add_executable(ml_boundary_visualizer
   src/main.cpp
   src/point.cpp
+  src/models.cpp
   src/renderer.cpp
   src/simulator.cpp
 )

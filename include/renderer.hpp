@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "data_point.hpp"
+#include "models.hpp"
 
 class Renderer {
  public:
@@ -18,6 +19,7 @@ class Renderer {
     std::string load_filename;
     float learn_rate_delta = 0.0f;
     int epochs_delta = 0;
+    int polynomial_degree = 0;
     int block_size_delta = 0;
     int screen_size_delta = 0;
     int dot_radius_delta = 0;
@@ -29,8 +31,10 @@ class Renderer {
   InputEvents PollInput();
   void Render(const std::vector<DataPoint>& points,
               const std::vector<float>& probabilities, int grid_columns,
-              int block_size, int screen_size, float weight1, float weight2,
-              int dot_radius, float bias, float learn_rate, int epochs,
+              int block_size, int screen_size,
+              const std::vector<MlModel::Parameter>& model_parameters,
+              int polynomial_degree, int dot_radius, float learn_rate,
+              int epochs,
               const std::string& file_status);
   void Close();
 
@@ -42,8 +46,9 @@ class Renderer {
   int class_1_color_index_ = 1;
   int current_screen_size_ = 0;
 
-  void DrawHelp(float weight1, float weight2, float bias, float learn_rate,
-                int epochs, int block_size, int screen_size, int dot_radius,
+  void DrawHelp(const std::vector<MlModel::Parameter>& model_parameters,
+                int polynomial_degree, float learn_rate, int epochs,
+                int block_size, int screen_size, int dot_radius,
                 const std::string& file_status) const;
 };
 
