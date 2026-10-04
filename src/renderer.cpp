@@ -12,7 +12,8 @@ struct NamedColor {
 
 constexpr NamedColor kPointColors[] = {
     {"Red", RED}, {"Blue", BLUE}, {"Green", GREEN}, {"Orange", ORANGE},
-    {"Purple", PURPLE}, {"Gold", GOLD}, {"Pink", PINK}, {"Maroon", MAROON}};
+    {"Purple", Color{145, 45, 210, 255}}, {"Gold", GOLD},
+    {"Pink", PINK}, {"Maroon", MAROON}};
 constexpr int kPointColorCount =
     static_cast<int>(sizeof(kPointColors) / sizeof(kPointColors[0]));
 constexpr Rectangle kFileInputBounds{75.0f, 232.0f, 475.0f, 36.0f};
