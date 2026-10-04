@@ -5,19 +5,15 @@
 #ifndef DATAPOINT_HPP
 #define DATAPOINT_HPP
 
-#include "raylib.h"
- 
- class DataPoint {
+class DataPoint {
   public:
     // constructors
     DataPoint(const double x, const double y, const bool flag);
-    DataPoint(Vector2 position , const bool flag);
 
     // getters
     double GetXCoordenate() const; 
     double GetYCoordenate() const;
     bool GetClassFlag() const;
-    Vector2 GetPosition() const;
     
     // setters 
     void SetX(const double x);
@@ -25,8 +21,8 @@
     void SetClassFlag(const bool class_flag);
     void ToggleClassFlag();
 
-    void ScreenToNorm();
-    void NormToScreen();
+    void ScreenToNorm(const double screen_size = 800.0);
+    void NormToScreen(const double screen_size = 800.0);
 
   private:  
     double x_coordenate_;

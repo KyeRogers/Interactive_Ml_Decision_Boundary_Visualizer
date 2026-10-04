@@ -5,10 +5,11 @@
 #ifndef SIMULATOR_HPP
 #define SIMULATOR_HPP
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "data_point.hpp"
+#include "renderer.hpp"
 
 class Simulator {
  public:
@@ -17,8 +18,7 @@ class Simulator {
   const std::vector<DataPoint>& GetDataPoints() const;
   void AddDataPoint(const DataPoint& new_data_point);
 
-  // initialize screen
-  void Initialize() const;
+  void Initialize();
 
   void LoadFromFile(const std::string& filename);
 
@@ -34,11 +34,19 @@ class Simulator {
     float bias = 0.0f;
     float learn_rate = 0.05f;  
     int KEpochs = 50;
-  } model;
+  };
+
+  LinearModel model;
+  int block_size_ = 10;
+  int screen_size_ = 800;
+  int dot_radius_ = 6;
+  std::string file_status_;
+  Renderer renderer_;
 
   void UpdateModelParameters();
   float Predict(const float x, const float y) const;
-  void Draw(const int step) const;
+  std::vector<float> BuildProbabilityGrid() const;
+  void Clear();
 
 };
 

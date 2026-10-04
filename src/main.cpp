@@ -1,6 +1,6 @@
-#include "raylib.h"
 #include "simulator.hpp"
 
+/** Starts the simulator and runs its main loop. */
 int main() {  
   Simulator sim;
   sim.Initialize();
