@@ -86,14 +86,6 @@ Coordinates should be within the current square screen, and class must be `0`
 or `1`. The bundled [`data/readme_ring_pattern.txt`](data/readme_ring_pattern.txt)
 is a ready-to-load example.
 
-### Recreate the ring pattern
-
-Load `data/readme_ring_pattern.txt` at 800 × 800, then set degree **4**, learning
-rate **0.20**, **200** epochs, **10 px** pixel blocks, and **4 px** dot radius.
-Set class 0 to **Purple** and class 1 to **Gold**, then close the help panel and
-let training finish. Load the data file before changing learning rate or
-epochs, since loading resets those settings.
-
 ## How it works
 
 `Simulator` owns the data, model, training, file loading, and probability-grid
