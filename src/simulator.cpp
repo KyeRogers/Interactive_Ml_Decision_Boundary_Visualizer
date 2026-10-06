@@ -16,6 +16,11 @@ Simulator::Simulator(std::unique_ptr<MlModel> model) : model_(std::move(model)) 
   if (!model_) {
     throw std::invalid_argument("Simulator requires a model.");
   }
+  if (model_->GetType() == MlModel::Type::NeuralNetwork) {
+    hidden_neurons_ = model_->GetHiddenNeuronCount();
+  } else {
+    polynomial_degree_ = model_->GetDegree();
+  }
   model_->SetLearningRate(learn_rate_);
 }
 
@@ -36,7 +41,7 @@ void Simulator::Initialize() { renderer_.Initialize(screen_size_); }
 /** Runs input handling, model updates, and rendering until the window closes. */
 void Simulator::Run() {
   while (!renderer_.ShouldClose()) {
-    const Renderer::InputEvents events = renderer_.PollInput();
+    const Renderer::InputEvents events = renderer_.PollInput(model_->GetType());
 
     if (events.add_point) {
       DataPoint point(events.point_x, events.point_y, events.point_class);
@@ -60,6 +65,17 @@ void Simulator::Run() {
       }
     }
 
+    if (events.toggle_model) {
+      if (model_->GetType() == MlModel::Type::Polynomial) {
+        model_ = std::make_unique<NeuralNetworkModel>(hidden_neurons_);
+      } else {
+        model_ = std::make_unique<PolynomialModel>(polynomial_degree_,
+                                                   learn_rate_);
+      }
+      model_->SetLearningRate(learn_rate_);
+      model_needs_training_ = true;
+    }
+
     const float previous_learn_rate = learn_rate_;
     learn_rate_ =
         std::clamp(learn_rate_ + events.learn_rate_delta, 0.001f, 1.0f);
@@ -70,9 +86,21 @@ void Simulator::Run() {
     KEpochs = std::clamp(KEpochs + events.epochs_delta, 1, 1000);
     model_needs_training_ =
         model_needs_training_ || KEpochs != previous_epochs;
-    if (events.polynomial_degree != 0) {
+    if (model_->GetType() == MlModel::Type::Polynomial &&
+        events.polynomial_degree != 0) {
       if (events.polynomial_degree != model_->GetDegree()) {
         model_->SetDegree(events.polynomial_degree);
+        polynomial_degree_ = events.polynomial_degree;
+        model_needs_training_ = true;
+      }
+    }
+    if (model_->GetType() == MlModel::Type::NeuralNetwork &&
+        events.hidden_neurons_delta != 0) {
+      const int updated_hidden_neurons =
+          std::clamp(hidden_neurons_ + events.hidden_neurons_delta, 1, 64);
+      if (updated_hidden_neurons != hidden_neurons_) {
+        hidden_neurons_ = updated_hidden_neurons;
+        model_->SetHiddenNeuronCount(hidden_neurons_);
         model_needs_training_ = true;
       }
     }
@@ -91,8 +119,8 @@ void Simulator::Run() {
     renderer_.Render(data_points_, probabilities,
                      (screen_size_ + block_size_ - 1) / block_size_,
                      block_size_, screen_size_, model_->GetParameters(),
-                     model_->GetDegree(), dot_radius_, learn_rate_, KEpochs,
-                     file_status_);
+                     model_->GetType(), polynomial_degree_, hidden_neurons_,
+                     dot_radius_, learn_rate_, KEpochs, file_status_);
   }
   renderer_.Close();
 }

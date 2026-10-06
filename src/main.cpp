@@ -2,7 +2,7 @@
 
 /** Starts the simulator and runs its main loop. */
 int main() {
-  Simulator sim(std::make_unique<NeuralNetworkModel>(8));
+  Simulator sim;
   sim.Initialize();
 
   sim.Run();

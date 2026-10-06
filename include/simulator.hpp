@@ -33,6 +33,8 @@ class Simulator {
 
   std::unique_ptr<MlModel> model_;
   bool model_needs_training_ = false;
+  int polynomial_degree_ = 1;
+  int hidden_neurons_ = 8;
   float learn_rate_ = 0.05f;
   int KEpochs = 50;
   int block_size_ = 20;

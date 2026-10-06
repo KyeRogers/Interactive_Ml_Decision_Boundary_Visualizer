@@ -23,6 +23,9 @@ constexpr float kDegreeButtonStartX = 455.0f;
 constexpr float kDegreeButtonY = 151.0f;
 constexpr float kDegreeButtonStep = 30.0f;
 constexpr float kDegreeButtonWidth = 26.0f;
+constexpr Rectangle kToggleModelBounds{590.0f, 52.0f, 150.0f, 30.0f};
+constexpr Rectangle kHiddenNeuronsMinusBounds{620.0f, 151.0f, 38.0f, 32.0f};
+constexpr Rectangle kHiddenNeuronsPlusBounds{664.0f, 151.0f, 38.0f, 32.0f};
 constexpr Rectangle DegreeButtonBounds(int degree) {
   return {kDegreeButtonStartX + (degree - 1) * kDegreeButtonStep,
           kDegreeButtonY, kDegreeButtonWidth, 30.0f};
@@ -81,7 +84,7 @@ void Renderer::Initialize(int screen_size) {
 bool Renderer::ShouldClose() const { return WindowShouldClose(); }
 
 /** Polls Raylib input and returns actions for the simulator to process. */
-Renderer::InputEvents Renderer::PollInput() {
+Renderer::InputEvents Renderer::PollInput(MlModel::Type model_type) {
   InputEvents events;
   bool file_input_cancelled = false;
   if (file_input_active_) {
@@ -129,7 +132,11 @@ Renderer::InputEvents Renderer::PollInput() {
     filename_entry_.clear();
   }
 
-  if (!file_input_active_) {
+  if (!file_input_active_ && IsKeyPressed(KEY_S)) {
+    events.toggle_model = true;
+  }
+
+  if (!file_input_active_ && model_type == MlModel::Type::Polynomial) {
     for (int degree = 1; degree <= 9; ++degree) {
       if (IsKeyPressed(KEY_ONE + degree - 1)) {
         events.polynomial_degree = degree;
@@ -141,49 +148,61 @@ Renderer::InputEvents Renderer::PollInput() {
   }
 
   if (show_help_) {
-    bool degree_selected = false;
-    for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
-      if (IsClicked(DegreeButtonBounds(degree))) {
-        events.polynomial_degree = degree;
-        degree_selected = true;
-        break;
+    if (IsClicked(kToggleModelBounds)) {
+      events.toggle_model = true;
+    } else if (model_type == MlModel::Type::NeuralNetwork &&
+               IsClicked(kHiddenNeuronsMinusBounds)) {
+      events.hidden_neurons_delta = -1;
+    } else if (model_type == MlModel::Type::NeuralNetwork &&
+               IsClicked(kHiddenNeuronsPlusBounds)) {
+      events.hidden_neurons_delta = 1;
+    } else {
+      bool degree_selected = false;
+      if (model_type == MlModel::Type::Polynomial) {
+        for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
+          if (IsClicked(DegreeButtonBounds(degree))) {
+            events.polynomial_degree = degree;
+            degree_selected = true;
+            break;
+          }
+        }
       }
-    }
-    if (!degree_selected) {
-      if (IsClicked(kFileInputBounds)) {
-        file_input_active_ = true;
-      } else if (IsClicked(kLoadButtonBounds)) {
-        events.load_file = true;
-        events.load_filename = filename_entry_;
-        file_input_active_ = filename_entry_.empty();
-      } else if (IsClicked(kLearnRateMinusBounds)) {
-        events.learn_rate_delta = -0.01f;
-      } else if (IsClicked(kLearnRatePlusBounds)) {
-        events.learn_rate_delta = 0.01f;
-      } else if (IsClicked(kEpochsMinusBounds)) {
-        events.epochs_delta = -10;
-      } else if (IsClicked(kEpochsPlusBounds)) {
-        events.epochs_delta = 10;
-      } else if (IsClicked(kBlockSizeMinusBounds)) {
-        events.block_size_delta = -2;
-      } else if (IsClicked(kBlockSizePlusBounds)) {
-        events.block_size_delta = 2;
-      } else if (IsClicked(kScreenSizeMinusBounds)) {
-        events.screen_size_delta = -100;
-      } else if (IsClicked(kScreenSizePlusBounds)) {
-        events.screen_size_delta = 100;
-      } else if (IsClicked(kDotRadiusMinusBounds)) {
-        events.dot_radius_delta = -1;
-      } else if (IsClicked(kDotRadiusPlusBounds)) {
-        events.dot_radius_delta = 1;
-      } else if (IsClicked(kClass0ColorMinusBounds)) {
-        class_0_color_index_ = CycleColor(class_0_color_index_, -1);
-      } else if (IsClicked(kClass0ColorPlusBounds)) {
-        class_0_color_index_ = CycleColor(class_0_color_index_, 1);
-      } else if (IsClicked(kClass1ColorMinusBounds)) {
-        class_1_color_index_ = CycleColor(class_1_color_index_, -1);
-      } else if (IsClicked(kClass1ColorPlusBounds)) {
-        class_1_color_index_ = CycleColor(class_1_color_index_, 1);
+      if (!degree_selected) {
+        if (IsClicked(kFileInputBounds)) {
+          file_input_active_ = true;
+        } else if (IsClicked(kLoadButtonBounds)) {
+          events.load_file = true;
+          events.load_filename = filename_entry_;
+          file_input_active_ = filename_entry_.empty();
+        } else if (IsClicked(kLearnRateMinusBounds)) {
+          events.learn_rate_delta = -0.01f;
+        } else if (IsClicked(kLearnRatePlusBounds)) {
+          events.learn_rate_delta = 0.01f;
+        } else if (IsClicked(kEpochsMinusBounds)) {
+          events.epochs_delta = -10;
+        } else if (IsClicked(kEpochsPlusBounds)) {
+          events.epochs_delta = 10;
+        } else if (IsClicked(kBlockSizeMinusBounds)) {
+          events.block_size_delta = -2;
+        } else if (IsClicked(kBlockSizePlusBounds)) {
+          events.block_size_delta = 2;
+        } else if (IsClicked(kScreenSizeMinusBounds)) {
+          events.screen_size_delta = -100;
+        } else if (IsClicked(kScreenSizePlusBounds)) {
+          events.screen_size_delta = 100;
+        } else if (IsClicked(kDotRadiusMinusBounds)) {
+          events.dot_radius_delta = -1;
+        } else if (IsClicked(kDotRadiusPlusBounds)) {
+          events.dot_radius_delta = 1;
+        } else if (IsClicked(kClass0ColorMinusBounds)) {
+          class_0_color_index_ = CycleColor(class_0_color_index_, -1);
+        } else if (IsClicked(kClass0ColorPlusBounds)) {
+          class_0_color_index_ = CycleColor(class_0_color_index_, 1);
+        } else if (IsClicked(kClass1ColorMinusBounds)) {
+          class_1_color_index_ = CycleColor(class_1_color_index_, -1);
+        } else if (IsClicked(kClass1ColorPlusBounds)) {
+          class_1_color_index_ = CycleColor(class_1_color_index_, 1);
+        }
       }
     }
   } else {
@@ -218,7 +237,8 @@ void Renderer::Render(const std::vector<DataPoint>& points,
                       const std::vector<float>& probabilities,
                       int grid_columns, int block_size, int screen_size,
                       const std::vector<MlModel::Parameter>& model_parameters,
-                      int polynomial_degree, int dot_radius, float learn_rate,
+                      MlModel::Type model_type, int polynomial_degree,
+                      int hidden_neurons, int dot_radius, float learn_rate,
                       int epochs,
                       const std::string& file_status) {
   if (screen_size != current_screen_size_) {
@@ -229,8 +249,9 @@ void Renderer::Render(const std::vector<DataPoint>& points,
   BeginDrawing();
   ClearBackground(RAYWHITE);
   if (show_help_) {
-    DrawHelp(model_parameters, polynomial_degree, learn_rate, epochs,
-             block_size, screen_size, dot_radius, file_status);
+    DrawHelp(model_parameters, model_type, polynomial_degree, hidden_neurons,
+             learn_rate, epochs, block_size, screen_size, dot_radius,
+             file_status);
     EndDrawing();
     return;
   }
@@ -267,6 +288,20 @@ void Renderer::Render(const std::vector<DataPoint>& points,
                             : kPointColors[class_0_color_index_].color;
     DrawCircleV(position, point_radius, color);
   }
+  const char* model_status =
+      model_type == MlModel::Type::Polynomial
+          ? TextFormat("Polynomial model | Degree: %d", polynomial_degree)
+          : TextFormat("Neural network | Hidden neurons: %d", hidden_neurons);
+  constexpr int status_font_size = 18;
+  const int status_width = MeasureText(model_status, status_font_size);
+  constexpr int status_padding = 8;
+  const int status_x = std::max(12, screen_size - status_width - 2 * status_padding);
+  DrawRectangle(status_x, 12, status_width + 2 * status_padding, 30,
+                Fade(RAYWHITE, 0.88f));
+  DrawRectangleLines(status_x, 12, status_width + 2 * status_padding, 30,
+                     DARKGRAY);
+  DrawText(model_status, status_x + status_padding, 18, status_font_size,
+           DARKGRAY);
   DrawText("Press ? for help (H)", 20, 20, 20, DARKGRAY);
   EndDrawing();
 }
@@ -277,26 +312,41 @@ void Renderer::Close() { CloseWindow(); }
 /** Draws the help panel, file input, model values, and interactive controls. */
 void Renderer::DrawHelp(
     const std::vector<MlModel::Parameter>& model_parameters,
-    int polynomial_degree, float learn_rate, int epochs, int block_size,
-    int screen_size, int dot_radius, const std::string& file_status) const {
+    MlModel::Type model_type, int polynomial_degree, int hidden_neurons,
+    float learn_rate, int epochs, int block_size, int screen_size,
+    int dot_radius, const std::string& file_status) const {
   DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.6f));
   DrawRectangle(40, 35, 720, 730, RAYWHITE);
   DrawRectangleLines(40, 35, 720, 730, DARKGRAY);
-  DrawText("HELP & SIMULATION CONTROLS", 210, 55, 22, MAROON);
+  DrawText("HELP & CONTROLS", 75, 55, 22, MAROON);
+  DrawText(model_type == MlModel::Type::Polynomial ? "Mode: Polynomial"
+                                                   : "Mode: Neural network",
+           420, 59, 16, DARKGRAY);
+  DrawButton(kToggleModelBounds,
+             model_type == MlModel::Type::Polynomial ? "Neural Net (S)"
+                                                     : "Polynomial (S)");
   DrawText("Left click: class 0   |   Right click: class 1   |   Space: reset",
            75, 95, 18, DARKGRAY);
   DrawText("F: open file input   |   Type x y class (0 or 1), one point per line",
            75, 125, 18, DARKGRAY);
-  DrawText("Polynomial degree (click or press 1-9):", 75, 157, 18, BLACK);
-  for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
-    const Rectangle bounds = DegreeButtonBounds(degree);
-    const bool selected = degree == polynomial_degree;
-    const bool hovered = CheckCollisionPointRec(GetMousePosition(), bounds);
-    DrawRectangleRec(bounds, selected ? GREEN : (hovered ? SKYBLUE : LIGHTGRAY));
-    DrawRectangleLinesEx(bounds, 1.0f, DARKGRAY);
-    DrawText(TextFormat("%d", degree % 10),
-             static_cast<int>(bounds.x + (bounds.width - 12.0f) / 2.0f),
-             static_cast<int>(bounds.y + 5.0f), 20, DARKGRAY);
+  if (model_type == MlModel::Type::Polynomial) {
+    DrawText("Polynomial degree (click or press 1-9):", 75, 157, 18, BLACK);
+    for (int degree = 1; degree <= kMaxPolynomialDegree; ++degree) {
+      const Rectangle bounds = DegreeButtonBounds(degree);
+      const bool selected = degree == polynomial_degree;
+      const bool hovered = CheckCollisionPointRec(GetMousePosition(), bounds);
+      DrawRectangleRec(bounds,
+                       selected ? GREEN : (hovered ? SKYBLUE : LIGHTGRAY));
+      DrawRectangleLinesEx(bounds, 1.0f, DARKGRAY);
+      DrawText(TextFormat("%d", degree % 10),
+               static_cast<int>(bounds.x + (bounds.width - 12.0f) / 2.0f),
+               static_cast<int>(bounds.y + 5.0f), 20, DARKGRAY);
+    }
+  } else {
+    DrawText(TextFormat("Hidden neurons: %d", hidden_neurons), 455, 157, 18,
+             BLACK);
+    DrawButton(kHiddenNeuronsMinusBounds, "-");
+    DrawButton(kHiddenNeuronsPlusBounds, "+");
   }
   DrawText("File path:", 75, 205, 18, BLACK);
   DrawRectangleRec(kFileInputBounds, WHITE);

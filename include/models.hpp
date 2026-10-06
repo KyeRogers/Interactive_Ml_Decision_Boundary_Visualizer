@@ -8,30 +8,38 @@
 
 class MlModel {
  public:
+  enum class Type { Polynomial, NeuralNetwork };
+
   struct Parameter {
     std::string name;
     float value;
   };
 
   virtual ~MlModel() = default;
+  virtual Type GetType() const = 0;
   virtual float Predict(float x1, float x2) const = 0;
   virtual void Train(float x1, float x2, float label) = 0;
   virtual void Reset() = 0;
   virtual void SetLearningRate(float learning_rate) = 0;
   virtual void SetDegree(int degree) = 0;
   virtual int GetDegree() const = 0;
+  virtual void SetHiddenNeuronCount(int count) = 0;
+  virtual int GetHiddenNeuronCount() const = 0;
   virtual std::vector<Parameter> GetParameters() const = 0;
 };
 
 class PolynomialModel : public MlModel {
  public:
   explicit PolynomialModel(int deg = 1, float learning_rate = 0.05f);
+  Type GetType() const override;
   float Predict(float x1, float x2) const override;
   void Train(float x1, float x2, float label) override;
   void Reset() override;
   void SetLearningRate(float learning_rate) override;
   void SetDegree(int degree) override;
   int GetDegree() const override;
+  void SetHiddenNeuronCount(int count) override;
+  int GetHiddenNeuronCount() const override;
   std::vector<Parameter> GetParameters() const override;
 
  private:
@@ -46,6 +54,7 @@ class PolynomialModel : public MlModel {
 class NeuralNetworkModel : public MlModel {
  public:
   explicit NeuralNetworkModel(const int k_hidden);
+  Type GetType() const override;
   void Reset() override;
   float Predict(float x1, float x2) const override;
   void Train(float x1, float x2, float label) override;
@@ -53,6 +62,8 @@ class NeuralNetworkModel : public MlModel {
   void SetLearningRate(float learning_rate) override;
   void SetDegree(int degree) override;
   int GetDegree() const override;
+  void SetHiddenNeuronCount(int count) override;
+  int GetHiddenNeuronCount() const override;
   std::vector<Parameter> GetParameters() const override;
 
  private:

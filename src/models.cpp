@@ -24,6 +24,8 @@ PolynomialModel::PolynomialModel(int deg, float learning_rate)
   weights.resize(ExpandFeatures(0.0f, 0.0f).size(), 0.0f);
 }
 
+MlModel::Type PolynomialModel::GetType() const { return Type::Polynomial; }
+
 float PolynomialModel::Predict(float x1, float x2) const {
   const std::vector<float> features = ExpandFeatures(x1, x2);
   float z = bias;
@@ -63,6 +65,13 @@ void PolynomialModel::SetDegree(int new_degree) {
 
 int PolynomialModel::GetDegree() const { return degree; }
 
+void PolynomialModel::SetHiddenNeuronCount(int count) {
+  (void)count;
+  throw std::logic_error("Polynomial models do not have hidden neurons.");
+}
+
+int PolynomialModel::GetHiddenNeuronCount() const { return 0; }
+
 std::vector<MlModel::Parameter> PolynomialModel::GetParameters() const {
   std::vector<Parameter> parameters;
   parameters.reserve(weights.size() + 1);
@@ -74,6 +83,8 @@ std::vector<MlModel::Parameter> PolynomialModel::GetParameters() const {
 }
 
 // Neural Network
+
+
 
 void NeuralNetworkModel::Reset() {
   weights_.assign(k_hidden_, std::vector<float>(2, 0.0f));
@@ -155,6 +166,10 @@ NeuralNetworkModel::NeuralNetworkModel(const int k_hidden)
   Reset();
 }
 
+MlModel::Type NeuralNetworkModel::GetType() const {
+  return Type::NeuralNetwork;
+}
+
 void NeuralNetworkModel::SetLearningRate(float learning_rate) {
   lr = learning_rate;
 }
@@ -163,9 +178,31 @@ void NeuralNetworkModel::SetDegree(int degree) { (void)degree; }
 
 int NeuralNetworkModel::GetDegree() const { return 0; }
 
+void NeuralNetworkModel::SetHiddenNeuronCount(int count) {
+  if (count <= 0 || count > 64) {
+    throw std::invalid_argument(
+        "Hidden neuron count must be between 1 and 64.");
+  }
+  if (count == k_hidden_) {
+    return;
+  }
+  k_hidden_ = count;
+  Reset();
+}
+
+int NeuralNetworkModel::GetHiddenNeuronCount() const { return k_hidden_; }
+
 std::vector<MlModel::Parameter> NeuralNetworkModel::GetParameters() const {
   std::vector<MlModel::Parameter> params;
-  params.push_back({"learning_rate", lr});
-  params.push_back({"k_hidden", static_cast<float>(k_hidden_)});
+  params.reserve(static_cast<std::size_t>(k_hidden_) * 4 + 1);
+  for (int i = 0; i < k_hidden_; ++i) {
+    const std::string neuron = "Hidden " + std::to_string(i + 1);
+    params.push_back({neuron + " weight x", weights_[i][0]});
+    params.push_back({neuron + " weight y", weights_[i][1]});
+    params.push_back({neuron + " bias", biases_[i]});
+    params.push_back(
+        {"Output weight " + std::to_string(i + 1), output_weights_[i]});
+  }
+  params.push_back({"Output bias", output_bias_});
   return params;
 }
